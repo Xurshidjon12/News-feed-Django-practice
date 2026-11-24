@@ -1,5 +1,7 @@
 from django.urls import reverse
 from django.utils import timezone
+from django.contrib.auth.models import User
+from django.utils.text import slugify
 from django.db import models
 from .managers import PublishedManager
 
@@ -46,6 +48,11 @@ class News(models.Model):
     def get_absolute_url(self):
         return reverse("news_detail", args=[self.slug])
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
 
 
 class Contact(models.Model):
@@ -55,3 +62,26 @@ class Contact(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Comment(models.Model):
+
+    news = models.ForeignKey(News, 
+                             on_delete=models.CASCADE,
+                             related_name='comments')
+    user = models.ForeignKey(User, 
+                             on_delete=models.CASCADE, 
+                             related_name='comments')
+    
+    body = models.TextField()
+    created_time = models.DateTimeField(auto_now_add=True)
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-created_time']
+
+    def __str__(self):
+        return f'Comment by {self.body} on {self.user}'
+
+
+
